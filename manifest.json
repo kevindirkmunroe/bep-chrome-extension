@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "BEP Event Autofill",
+  "version": "1.0",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sf.funcheap.com/*",
+        "https://dothebay.com/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}
