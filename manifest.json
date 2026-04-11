@@ -3,11 +3,16 @@
   "name": "BEP Event Autofill",
   "version": "1.0",
   "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
-        "https://sf.funcheap.com/*",
-        "https://dothebay.com/*"
+        "http://localhost:4150/*",
+        "*://*.funcheap.com/*",
+        "*://dothebay.com/*"
       ],
       "js": ["content.js"]
     }
