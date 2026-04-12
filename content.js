@@ -1,6 +1,16 @@
 const funcheapMap = {
   title: "#input_18_1",
   location_name: "#input_18_8",
+  description: "#input_18_2"
+}
+
+const visitOaklandMap = {
+  name: "#postname",
+  email: "#postemail",
+  title: "#title",
+  location_name: "#location",
+  description: "#description",
+  start_datetime: "#startdate"
 }
 
 function formatDateForFuncheap(datetime) {
@@ -35,6 +45,7 @@ function setTinyMCE(selector, value) {
   console.log("TinyMCE content set");
 }
 
+// TinyMCE is WordPress fancy version of <textArea>
 function waitAndSetTinyMCE(selector, value) {
   const interval = setInterval(() => {
     const iframe = document.querySelector(selector);
@@ -99,8 +110,8 @@ function autofillFromMap(event, map) {
 }
 
 function autofillFuncheap(event) {
-  // setInput('input[name="event_title"]', event.title);
-  // setInput('textarea[name="event_description"]', event.description);
+  console.log("Autofilling FuncheapSF", event);
+
   autofillFromMap(event, funcheapMap);
   waitAndSetTinyMCE("#input_18_2_ifr", event.description);
   if(event.start_datetime){
@@ -109,8 +120,10 @@ function autofillFuncheap(event) {
   }
 }
 
-function autofillDotheBay(event) {
-  setInput('input[name="title"]', event.title);
+function autofillVisitOakland(event) {
+  console.log("Autofilling VisitOakland", event);
+
+  autofillFromMap(event, visitOaklandMap);
 }
 
 function runAutofill() {
@@ -123,8 +136,8 @@ function runAutofill() {
 
     if (window.location.hostname.includes("funcheap")) {
       autofillFuncheap(event);
-    }else if(window.location.hostname.includes("dothebay")){
-      autofillDotheBay(event);
+    }else if(window.location.hostname.includes("visitoakland")){
+      autofillVisitOakland(event);
     }
   });
 }

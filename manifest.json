@@ -12,7 +12,7 @@
       "matches": [
         "http://localhost:4150/*",
         "*://*.funcheap.com/*",
-        "*://dothebay.com/*"
+        "*://*.visitoakland.com/*"
       ],
       "js": ["content.js"]
     }
