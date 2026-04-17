@@ -1,7 +1,10 @@
 const funcheapMap = {
   title: "#input_18_1",
+  email: "#input_18_43",
   location_name: "#input_18_8",
-  description: "#input_18_2"
+  description: "#input_18_2",
+  address: "#input_18_9",
+  website: "#input_18_30"
 }
 
 const visitOaklandMap = {
