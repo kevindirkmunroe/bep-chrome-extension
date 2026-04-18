@@ -3,8 +3,10 @@ const funcheapMap = {
   email: "#input_18_43",
   location_name: "#input_18_8",
   description: "#input_18_2",
-  address: "#input_18_9",
-  website: "#input_18_30"
+  website: "#input_18_30",
+  name: "#input_18_44",
+  organization: "#input_18_42",
+  phone: "#input_18_69"
 }
 
 const visitOaklandMap = {
@@ -25,6 +27,39 @@ function formatDateForFuncheap(datetime) {
 
   return `${mm}/${dd}/${yyyy}`;
 }
+
+const parseTime = (isoString) => {
+  if (!isoString) return { hour: "", minute: "", ampm: "AM" };
+
+  const date = new Date(isoString);
+  let hours = date.getHours(); // 0–23
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  // convert to 12-hour format
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+
+  return {
+    hour: String(hours),                 // "8"
+    minute: String(minutes).padStart(2, "0"), // "30"
+    ampm                                 // "PM"
+  };
+};
+
+// Some fields won't accept set .value, need to simulate user typing.
+const typeLikeUser = async (el, text) => {
+  el.focus();
+  el.value = "";
+
+  for (let char of text) {
+    el.value += char;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise(r => setTimeout(r, 20)); // slight delay
+  }
+
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+};
 
 function setTinyMCE(selector, value) {
   const iframe = document.querySelector(selector);
@@ -60,20 +95,30 @@ function waitAndSetTinyMCE(selector, value) {
   }, 500);
 }
 
-function setInput(selector, value) {
-  const el = document.querySelector(selector);
-  if (!el) return;
+// Some fields like address want you to select from autocomplete options as you type.
+// Here we simulate that selection, user can change selection after but at least
+// field is not blank.
+const selectAutocomplete = async (el, text) => {
+  el.focus();
+  el.value = "";
 
-  el.value = value;
+  for (let char of text) {
+    el.value += char;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise(r => setTimeout(r, 20));
+  }
 
-  // important for React-based forms
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-}
+  // wait for dropdown
+  await new Promise(r => setTimeout(r, 500));
+
+  // simulate selecting first suggestion
+  el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+  el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+};
 
 // FunCheap is using Gravity Forms (WordPress)
 // → forms load after page load
 // Use waitAndSet to wait for element to load
-
 function waitAndSet(selector, value) {
   const interval = setInterval(() => {
     const el = document.querySelector(selector);
@@ -85,10 +130,10 @@ function waitAndSet(selector, value) {
       el.dispatchEvent(new Event("input", { bubbles: true }));
       el.dispatchEvent(new Event("change", { bubbles: true }));
 
-      el.style.border = "2px solid red"; // debug
+      el.style.border = "2px solid #39FF14"; // debug
       console.log("Filled:", selector);
     }
-  }, 500);
+  }, 1000);
 }
 
 function setupSender() {
@@ -118,8 +163,16 @@ function autofillFuncheap(event) {
   autofillFromMap(event, funcheapMap);
   waitAndSetTinyMCE("#input_18_2_ifr", event.description);
   if(event.start_datetime){
+    // start date...
     const formattedDate = formatDateForFuncheap(event.start_datetime);
     waitAndSet("#input_18_12", formattedDate);
+    // start time...
+    const timeValues =  parseTime(event.start_datetime);
+    console.log(`timeValues from ${event.start_datetime} are ${JSON.stringify(timeValues)}`);
+    const {hour, minute, ampm} = timeValues;
+    waitAndSet("#input_18_5_1", Number(hour));
+    waitAndSet("#input_18_5_2", Number(minute));
+    waitAndSet("#input_18_5_3", ampm?.toLowerCase());
   }
 }
 
