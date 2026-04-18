@@ -15,7 +15,12 @@ const visitOaklandMap = {
   title: "#title",
   location_name: "#location",
   description: "#description",
-  start_datetime: "#startdate"
+  start_datetime: "#startdate",
+  phone: "#postphone",
+  organization: "#contact",
+  address: "#addr1",
+  price: "#admission",
+  website: "#linkurl"
 }
 
 function formatDateForFuncheap(datetime) {
@@ -45,20 +50,6 @@ const parseTime = (isoString) => {
     minute: String(minutes).padStart(2, "0"), // "30"
     ampm                                 // "PM"
   };
-};
-
-// Some fields won't accept set .value, need to simulate user typing.
-const typeLikeUser = async (el, text) => {
-  el.focus();
-  el.value = "";
-
-  for (let char of text) {
-    el.value += char;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    await new Promise(r => setTimeout(r, 20)); // slight delay
-  }
-
-  el.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
 function setTinyMCE(selector, value) {
@@ -94,27 +85,6 @@ function waitAndSetTinyMCE(selector, value) {
     }
   }, 500);
 }
-
-// Some fields like address want you to select from autocomplete options as you type.
-// Here we simulate that selection, user can change selection after but at least
-// field is not blank.
-const selectAutocomplete = async (el, text) => {
-  el.focus();
-  el.value = "";
-
-  for (let char of text) {
-    el.value += char;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    await new Promise(r => setTimeout(r, 20));
-  }
-
-  // wait for dropdown
-  await new Promise(r => setTimeout(r, 500));
-
-  // simulate selecting first suggestion
-  el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
-  el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-};
 
 // FunCheap is using Gravity Forms (WordPress)
 // → forms load after page load
@@ -162,14 +132,14 @@ function autofillFuncheap(event) {
 
   autofillFromMap(event, funcheapMap);
   waitAndSetTinyMCE("#input_18_2_ifr", event.description);
+  waitAndSet("#input_18_43_2", event.email);
+
   if(event.start_datetime){
     // start date...
     const formattedDate = formatDateForFuncheap(event.start_datetime);
     waitAndSet("#input_18_12", formattedDate);
     // start time...
-    const timeValues =  parseTime(event.start_datetime);
-    console.log(`timeValues from ${event.start_datetime} are ${JSON.stringify(timeValues)}`);
-    const {hour, minute, ampm} = timeValues;
+    const  {hour, minute, ampm} =  parseTime(event.start_datetime);
     waitAndSet("#input_18_5_1", Number(hour));
     waitAndSet("#input_18_5_2", Number(minute));
     waitAndSet("#input_18_5_3", ampm?.toLowerCase());
@@ -180,6 +150,11 @@ function autofillVisitOakland(event) {
   console.log("Autofilling VisitOakland", event);
 
   autofillFromMap(event, visitOaklandMap);
+
+  const  {hour, minute, ampm} =  parseTime(event.start_datetime);
+  waitAndSet("#starttime", `${hour}:${minute} ${ampm}`);
+  waitAndSet("#email", event.email);
+  waitAndSet("#phone", event.phone);
 }
 
 function runAutofill() {
