@@ -52,6 +52,28 @@ const parseTime = (isoString) => {
   };
 };
 
+// Helper for setting value in form in case straightup element.value = "XYZ" doesn't work
+const setSelectValue = (el, value) => {
+  el.value = value;
+
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+};
+
+//
+// Helpers for radio buttons and checkboxes
+//
+function clickAndHighlight(selector){
+  const el = document.querySelector(selector);
+  el.click();
+  el.style.border = "5px solid #F89D86";
+  el.style.borderRadius = "5px";
+  console.log("Clicked:", selector);
+}
+
+//
+// Helpers for Wordpress text areas: MCE
+//
 function setTinyMCE(selector, value) {
   const iframe = document.querySelector(selector);
 
@@ -74,7 +96,6 @@ function setTinyMCE(selector, value) {
   console.log("TinyMCE content set");
 }
 
-// TinyMCE is WordPress fancy version of <textArea>
 function waitAndSetTinyMCE(selector, value) {
   const interval = setInterval(() => {
     const iframe = document.querySelector(selector);
@@ -100,7 +121,8 @@ function waitAndSet(selector, value) {
       el.dispatchEvent(new Event("input", { bubbles: true }));
       el.dispatchEvent(new Event("change", { bubbles: true }));
 
-      el.style.border = "2px solid #39FF14"; // debug
+      el.style.border = "5px solid #F89D86";
+      el.style.borderRadius = "5px";
       console.log("Filled:", selector);
     }
   }, 1000);
@@ -117,6 +139,10 @@ function setupSender() {
   });
 }
 
+//
+// Helper that pulls key/values from a map and sets fields
+// key=form element id, value=form content
+//
 function autofillFromMap(event, map) {
   Object.entries(map).forEach(([key, selector]) => {
     const value = event[key];
@@ -143,6 +169,11 @@ function autofillFuncheap(event) {
     waitAndSet("#input_18_5_1", Number(hour));
     waitAndSet("#input_18_5_2", Number(minute));
     waitAndSet("#input_18_5_3", ampm?.toLowerCase());
+
+    // checkboxes and radio buttons. Pick most common options...
+    clickAndHighlight('#label_18_128_0'); // Frequency: Single Day Event
+    clickAndHighlight('#label_18_106_1'); // Online or In-Person: In Person
+    clickAndHighlight('#label_18_107_0'); // Free or Paid: Free
   }
 }
 
@@ -155,6 +186,8 @@ function autofillVisitOakland(event) {
   waitAndSet("#starttime", `${hour}:${minute} ${ampm}`);
   waitAndSet("#email", event.email);
   waitAndSet("#phone", event.phone);
+
+  setSelectValue(document.querySelector("#state"), "CA");
 }
 
 function runAutofill() {
