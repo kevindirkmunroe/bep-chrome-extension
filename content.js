@@ -72,6 +72,40 @@ function clickAndHighlight(selector){
 }
 
 //
+// Helper for adding images in platform pages
+//
+const base64ToFile = async (base64, filename, mimeType) => {
+  const res = await fetch(base64);
+  const blob = await res.blob();
+  return new File([blob], filename, { type: mimeType });
+};
+
+let imageInjected = false;
+const injectImage = async (base64, filename, mimeType) => {
+  if (imageInjected) return; // 🚫 stop loop
+  imageInjected = true;
+
+  const inputs = document.querySelectorAll('input[type="file"]');
+
+  if (!inputs) {
+    console.error("No file input found");
+    return;
+  }
+  const fileInput = inputs[0];
+
+  const file = await base64ToFile(base64, filename, mimeType);
+
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+
+  fileInput.files = dataTransfer.files;
+  // 🔥 trigger ALL relevant events
+  fileInput.dispatchEvent(new Event("input", { bubbles: true }));
+  fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+  console.log("✅ Image injected");
+};
+
+//
 // Helpers for Wordpress text areas: MCE
 //
 function setTinyMCE(selector, value) {
@@ -135,6 +169,10 @@ function setupSender() {
         event_data: event.data.payload
       });
       console.log("Stored event data");
+    }else if(event.data?.type === "BEP_IMAGE_UPLOAD"){
+      const { base64, filename, mimeType } = event.data.payload;
+
+      injectImage(base64, filename, mimeType);
     }
   });
 }
