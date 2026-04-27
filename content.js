@@ -52,6 +52,29 @@ const parseTime = (isoString) => {
   };
 };
 
+// Helper for Region dropdown
+function selectDropdownByText(selectEl, targetText) {
+  const options = Array.from(selectEl.options);
+
+  const match = options.find(
+      (opt) => opt.text.trim().toLowerCase() === targetText.toLowerCase()
+  );
+
+  if (!match) {
+    console.warn("❌ No matching option for:", targetText);
+    return;
+  }
+
+  selectEl.value = match.value;
+
+  // 🔥 trigger change for frameworks (Gravity Forms etc)
+  selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+  selectEl.style.border = "5px solid #F89D86";
+  selectEl.style.borderRadius = "5px";
+
+  console.log(`✅ Selected ${match.text} (${match.value})`);
+}
+
 // Helper for setting value in form in case straightup element.value = "XYZ" doesn't work
 const setSelectValue = (el, value) => {
   el.value = value;
@@ -212,6 +235,11 @@ function autofillFuncheap(event) {
     clickAndHighlight('#label_18_128_0'); // Frequency: Single Day Event
     clickAndHighlight('#label_18_106_1'); // Online or In-Person: In Person
     clickAndHighlight('#label_18_107_0'); // Free or Paid: Free
+
+    const select = document.querySelector("#input_18_133");
+    if (select && event.region) {
+      selectDropdownByText(select, event.region);
+    }
   }
 }
 
