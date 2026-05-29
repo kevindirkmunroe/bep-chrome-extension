@@ -1,43 +1,3 @@
-const funcheapMap = {
-  title: "#input_18_1",
-  email: "#input_18_43",
-  location_name: "#input_18_8",
-  description: "#input_18_2",
-  website: "#input_18_30",
-  name: "#input_18_44",
-  organization: "#input_18_42",
-  phone: "#input_18_69"
-}
-
-const visitOaklandMap = {
-  name: "#postname",
-  email: "#postemail",
-  title: "#title",
-  location_name: "#location",
-  description: "#description",
-  start_datetime: "#startdate",
-  phone: "#postphone",
-  organization: "#contact",
-  address: "#addr1",
-  price: "#admission",
-  website: "#linkurl"
-}
-
-const indyBayMap = {
-    name: '#displayed_author_name',
-    email: '#email',
-    title: '#title1',
-    phone: '#phone',
-    description: '#text',
-    location: '#summary'
-}
-
-const sfstationMap = {
-  title: "[name='name']",
-  description: '#description',
-  location: "[name='location']"
-}
-
 function formatDateForFuncheap(datetime) {
   const d = new Date(datetime);
 
@@ -261,7 +221,7 @@ function autofillFromMap(event, map) {
 function autofillFuncheap(event) {
   console.log("Autofilling FuncheapSF", event);
 
-  autofillFromMap(event, funcheapMap);
+  autofillFromMap(event, MAPPINGS.funcheapsf);
   waitAndSetTinyMCE("#input_18_2_ifr", event.description);
   waitAndSet("#input_18_43_2", event.email);
 
@@ -290,7 +250,7 @@ function autofillFuncheap(event) {
 function autofillVisitOakland(event) {
   console.log("Autofilling VisitOakland", event);
 
-  autofillFromMap(event, visitOaklandMap);
+  autofillFromMap(event, MAPPINGS.visitoakland);
 
   const  {hour, minute, ampm} =  parseTime(event.start_datetime);
   waitAndSet("#starttime", `${hour}:${minute} ${ampm}`);
@@ -314,7 +274,7 @@ const indyBayDate = (hour, ampm) => {
 function autofillIndyBay(event) {
   console.log("Autofilling IndyBay", event);
 
-  autofillFromMap(event, indyBayMap);
+  autofillFromMap(event, MAPPINGS.indybay);
 
   selectDropdownByText(document.querySelector("#topic_id"), "Arts + Action");
   selectDropdownByText(document.querySelector("#event_type_id"), "Other");
@@ -329,7 +289,7 @@ function autofillIndyBay(event) {
 
 function autofillSFStation(event) {
   console.log("Autofilling SFStation", event);
-  autofillFromMap(event, sfstationMap);
+  autofillFromMap(event, MAPPINGS.sfstation);
 }
 
 function detectPlatform(){
@@ -346,7 +306,6 @@ function detectPlatform(){
 
 function runAutofill() {
   const platform = detectPlatform();
-  const key = `LOCALBUZZ_AUTOFILL_${platform}`;
 
   chrome.storage.local.get("event_data", (data) => {
     const event = data.event_data;
