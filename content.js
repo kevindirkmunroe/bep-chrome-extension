@@ -23,6 +23,21 @@ const visitOaklandMap = {
   website: "#linkurl"
 }
 
+const indyBayMap = {
+    name: '#displayed_author_name',
+    email: '#email',
+    title: '#title1',
+    phone: '#phone',
+    description: '#text',
+    location: '#summary'
+}
+
+const sfstationMap = {
+  title: "[name='name']",
+  description: '#description',
+  location: "[name='location']"
+}
+
 function formatDateForFuncheap(datetime) {
   const d = new Date(datetime);
 
@@ -37,6 +52,10 @@ const parseTime = (isoString) => {
   if (!isoString) return { hour: "", minute: "", ampm: "AM" };
 
   const date = new Date(isoString);
+  const month = date.getMonth();
+  const day = date.getDay();
+  const year = date.getFullYear();
+
   let hours = date.getHours(); // 0–23
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? "PM" : "AM";
@@ -46,6 +65,9 @@ const parseTime = (isoString) => {
   if (hours === 0) hours = 12;
 
   return {
+    month: String(month),
+    day: String(day),
+    year: String(year),
     hour: String(hours),                 // "8"
     minute: String(minutes).padStart(2, "0"), // "30"
     ampm                                 // "PM"
@@ -94,6 +116,28 @@ function clickAndHighlight(selector){
   console.log("Clicked:", selector);
 }
 
+//
+// Helper for textarea
+//
+function setTextarea(selector, value) {
+  const textarea = document.querySelector(selector);
+
+  if (!textarea) {
+    console.log("textarea not found");
+    return;
+  }
+  textarea.focus();
+  textarea.value = value;
+  textarea.dispatchEvent(
+      new Event("input", { bubbles: true })
+  );
+  textarea.dispatchEvent(
+      new Event("change", { bubbles: true })
+  );
+  textarea.style.border = "5px solid #F89D86";
+  textarea.style.borderRadius = "5px";
+  textarea.blur();
+}
 //
 // Helper for adding images in platform pages
 //
@@ -256,7 +300,54 @@ function autofillVisitOakland(event) {
   setSelectValue(document.querySelector("#state"), "CA");
 }
 
+const indyBayDate = (hour, ampm) => {
+  if(hour === '12'){
+    if(ampm ==='am'){
+      return 'Midnight';
+    }else{
+      return 'Noon';
+    }
+  }
+  return `${hour} ${ampm}`;
+}
+
+function autofillIndyBay(event) {
+  console.log("Autofilling IndyBay", event);
+
+  autofillFromMap(event, indyBayMap);
+
+  selectDropdownByText(document.querySelector("#topic_id"), "Arts + Action");
+  selectDropdownByText(document.querySelector("#event_type_id"), "Other");
+  // Date has 4 fields
+  const  {month, day, year, hour, ampm} =  parseTime(event.start_datetime);
+  selectDropdownByText(document.querySelector("#displayed_date_month"), month);
+  selectDropdownByText(document.querySelector("#displayed_date_day"), day);
+  selectDropdownByText(document.querySelector("#displayed_date_year"), year);
+  selectDropdownByText(document.querySelector("#displayed_date_hour"), indyBayDate(hour, ampm));
+
+}
+
+function autofillSFStation(event) {
+  console.log("Autofilling SFStation", event);
+  autofillFromMap(event, sfstationMap);
+}
+
+function detectPlatform(){
+  if (window.location.hostname.includes("funcheap")) {
+    return "funcheap";
+  }else if(window.location.hostname.includes("visitoakland")){
+    return "visitoakland";
+  }else if(window.location.hostname.includes("indybay")){
+    return "indybay";
+  }else if(window.location.hostname.includes("sfstation")){
+    return "sfstation";
+  }
+}
+
 function runAutofill() {
+  const platform = detectPlatform();
+  const key = `LOCALBUZZ_AUTOFILL_${platform}`;
+
   chrome.storage.local.get("event_data", (data) => {
     const event = data.event_data;
 
@@ -264,10 +355,14 @@ function runAutofill() {
 
     if (!event) return;
 
-    if (window.location.hostname.includes("funcheap")) {
+    if (platform === "funcheap") {
       autofillFuncheap(event);
-    }else if(window.location.hostname.includes("visitoakland")){
+    }else if(platform === "visitoakland"){
       autofillVisitOakland(event);
+    }else if(platform === "indybay"){
+      autofillIndyBay(event);
+    }else if(platform === "sfstation"){
+      autofillSFStation(event);
     }
   });
 }

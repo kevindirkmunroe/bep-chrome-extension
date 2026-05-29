@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "BEP Event Autofill",
+  "name": "LocalBuzz Event Autofill",
   "version": "1.0",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
@@ -12,7 +12,13 @@
       "matches": [
         "http://localhost:4150/*",
         "*://*.funcheap.com/*",
-        "*://*.visitoakland.com/*"
+        "*://funcheap.com/*",
+        "*://*.visitoakland.com/*",
+        "*://visitoakland.com/*",
+        "*://*.indybay.org/*",
+        "*://indybay.org/*",
+        "*://*.sfstation.com/*",
+        "*://sfstation.com/*"
       ],
       "js": ["content.js"]
     }
