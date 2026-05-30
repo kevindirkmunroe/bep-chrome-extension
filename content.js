@@ -8,6 +8,18 @@ function formatDateForFuncheap(datetime) {
   return `${mm}/${dd}/${yyyy}`;
 }
 
+function detectPlatform(){
+  if (window.location.hostname.includes("funcheap")) {
+    return "funcheapsf";
+  }else if(window.location.hostname.includes("visitoakland")){
+    return "visitoakland";
+  }else if(window.location.hostname.includes("indybay")){
+    return "indybay";
+  }else if(window.location.hostname.includes("sfstation")){
+    return "sfstation";
+  }
+}
+
 const parseTime = (isoString) => {
   if (!isoString) return { hour: "", minute: "", ampm: "AM" };
 
@@ -64,6 +76,121 @@ const setSelectValue = (el, value) => {
   el.dispatchEvent(new Event("input", { bubbles: true }));
   el.dispatchEvent(new Event("change", { bubbles: true }));
 };
+
+//
+// Helper for sfstation select pulldown. It is not a
+// <select> tag, it is an Angular UI Bootstrap typeahead.
+//
+// For these, the reliable automation pattern is usually:
+//
+// focus input
+// set input value
+// dispatch input/change/keydown
+// wait for dropdown items
+// click matching <a title="...">
+//
+async function selectSfStationCategory(categoryName) {
+  const input = document.querySelector('input[name="category_0"]');
+
+  if (!input) {
+    console.warn("[SFStation] category input not found");
+    return false;
+  }
+
+  input.focus();
+
+  // Clear existing value
+  input.value = "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+
+  // Type category text
+  input.value = categoryName;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  input.dispatchEvent(new KeyboardEvent("keydown", {
+    bubbles: true,
+    key: categoryName[0] || "A"
+  }));
+
+  // Wait for Angular typeahead results
+  const option = await waitForElement(() => {
+    const links = Array.from(
+        document.querySelectorAll('ul[uib-typeahead-popup] li a')
+    );
+
+    return links.find(
+        a => a.getAttribute("title")?.trim() === categoryName
+    );
+  }, 3000);
+
+  if (!option) {
+    console.warn("[SFStation] category option not found:", categoryName);
+    return false;
+  }
+
+  option.click();
+
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  input.blur();
+
+  console.log("[SFStation] selected category:", categoryName);
+  return true;
+}
+
+function waitForElement(getter, timeoutMs = 3000, intervalMs = 100) {
+  return new Promise((resolve) => {
+    const started = Date.now();
+
+    const timer = setInterval(() => {
+      const el = getter();
+
+      if (el) {
+        clearInterval(timer);
+        resolve(el);
+        return;
+      }
+
+      if (Date.now() - started > timeoutMs) {
+        clearInterval(timer);
+        resolve(null);
+      }
+    }, intervalMs);
+  });
+}
+
+//
+// Helper for Multi-select listbox (e.g. visitoakland categories
+//
+function selectMultiSelectOptionByText(selector, targetText) {
+  try {
+    const select = document.querySelector(selector);
+
+    if (!select) {
+      console.warn("Select not found:", selector);
+      return;
+    }
+
+    const options = Array.from(select.options);
+
+    const match = options.find(
+        opt => opt.textContent.trim() === targetText
+    );
+
+    if (!match) {
+      console.warn("No option found:", targetText);
+      return;
+    }
+
+    match.selected = true;
+
+    select.dispatchEvent(new Event("input", {bubbles: true}));
+    select.dispatchEvent(new Event("change", {bubbles: true}));
+
+    console.log("Selected:", targetText, match.value);
+  }catch(err){
+    console.error(`Error on selectMultiSelectOptionByText: ${err}`);
+  }
+}
 
 //
 // Helpers for radio buttons and checkboxes
@@ -191,15 +318,45 @@ function waitAndSet(selector, value) {
 
 function setupSender() {
   window.addEventListener("message", (event) => {
-    if (event.data.type === "SET_EVENT") {
-      chrome.storage.local.set({
-        event_data: event.data.payload
-      });
-      console.log("Stored event data");
-    }else if(event.data?.type === "BEP_IMAGE_UPLOAD"){
-      const { base64, filename, mimeType } = event.data.payload;
+    if (!chrome?.runtime?.id) {
+      console.warn("[LocalBuzz] extension context invalidated");
+      return;
+    }
 
-      injectImage(base64, filename, mimeType);
+    console.log(`LOCALBUZZ_AUTOFILL by key: final.`);
+    if (event.source !== window) return;
+    const eventDataType = event.data?.type;
+    console.log(`event.data.type ${eventDataType}`);
+    if (!eventDataType?.startsWith("LOCALBUZZ_AUTOFILL")) return;
+
+    const job = {
+      payload: event.data.payload,
+      platform: event.data.platform,
+      createdAt: Date.now()
+    };
+
+    console.log("[bridge] received from LocalBuzz React", job);
+
+    try {
+      console.log("[bridge] about to store job...");
+      chrome.storage.local.set(
+          { [eventDataType]: job },
+          () => {
+            if (chrome.runtime.lastError) {
+              console.error("[bridge] storage error:", chrome.runtime.lastError);
+              return;
+            }
+
+            console.log("[bridge] saved job");
+
+            chrome.storage.local.get(key, (result) => {
+              console.log("[bridge] read back:", result);
+            });
+          }
+      );
+      console.log("[bridge] done.");
+    } catch (err) {
+      console.error("[bridge] exception during storage set:", err);
     }
   });
 }
@@ -221,9 +378,20 @@ function autofillFromMap(event, map) {
 function autofillFuncheap(event) {
   console.log("Autofilling FuncheapSF", event);
 
-  autofillFromMap(event, MAPPINGS.funcheapsf);
+  autofillFromMap(event, SELECTOR_MAPPINGS.funcheapsf);
   waitAndSetTinyMCE("#input_18_2_ifr", event.description);
   waitAndSet("#input_18_43_2", event.email);
+
+  // translate canonical category to fc category...
+  console.log(`event.category=${event.category}`);
+  const fcCategory = CATEGORY_MAPPINGS.funcheapsf[event.category];
+  console.log(`event.category=${event.category}, fcCategory=${fcCategory}`);
+  // then get selector for fc category...
+  const fcCategorySelector = SELECTOR_MAPPINGS.funcheapsfCategories[fcCategory];
+  console.log(`event.category=${event.category}, fcCategory=${fcCategory}, fcCategorySelector=${fcCategorySelector}`);
+  if (fcCategorySelector) {
+    clickAndHighlight(fcCategorySelector); // Online or In-Person: In Person
+  }
 
   if(event.start_datetime){
     // start date...
@@ -250,14 +418,17 @@ function autofillFuncheap(event) {
 function autofillVisitOakland(event) {
   console.log("Autofilling VisitOakland", event);
 
-  autofillFromMap(event, MAPPINGS.visitoakland);
+  autofillFromMap(event, SELECTOR_MAPPINGS.visitoakland);
 
   const  {hour, minute, ampm} =  parseTime(event.start_datetime);
   waitAndSet("#starttime", `${hour}:${minute} ${ampm}`);
   waitAndSet("#email", event.email);
   waitAndSet("#phone", event.phone);
-
   setSelectValue(document.querySelector("#state"), "CA");
+
+  const voCategory = CATEGORY_MAPPINGS.visitoakland[event.category];
+  console.log(`category ${event.category} vo ${voCategory}`);
+  selectMultiSelectOptionByText("#categories", voCategory);
 }
 
 const indyBayDate = (hour, ampm) => {
@@ -274,7 +445,7 @@ const indyBayDate = (hour, ampm) => {
 function autofillIndyBay(event) {
   console.log("Autofilling IndyBay", event);
 
-  autofillFromMap(event, MAPPINGS.indybay);
+  autofillFromMap(event, SELECTOR_MAPPINGS.indybay);
 
   selectDropdownByText(document.querySelector("#topic_id"), "Arts + Action");
   selectDropdownByText(document.querySelector("#event_type_id"), "Other");
@@ -289,32 +460,26 @@ function autofillIndyBay(event) {
 
 function autofillSFStation(event) {
   console.log("Autofilling SFStation", event);
-  autofillFromMap(event, MAPPINGS.sfstation);
-}
-
-function detectPlatform(){
-  if (window.location.hostname.includes("funcheap")) {
-    return "funcheap";
-  }else if(window.location.hostname.includes("visitoakland")){
-    return "visitoakland";
-  }else if(window.location.hostname.includes("indybay")){
-    return "indybay";
-  }else if(window.location.hostname.includes("sfstation")){
-    return "sfstation";
-  }
+  autofillFromMap(event, SELECTOR_MAPPINGS.sfstation);
+  const sfstationCategory = CATEGORY_MAPPINGS.sfstation[event.category];
+  selectSfStationCategory(sfstationCategory);
 }
 
 function runAutofill() {
+  console.log(`Running autofill...`);
   const platform = detectPlatform();
+  const key = `LOCALBUZZ_AUTOFILL_${platform}`;
+  chrome.storage.local.get(key, (data) => {
+    const event = data[key]?.payload;
 
-  chrome.storage.local.get("event_data", (data) => {
-    const event = data.event_data;
-
-    console.log("EVENT DATA:", event);
+    console.log("key:", key);
+    console.log("raw data:", data);
+    const job = data[key];
+    console.log("job:", job);
 
     if (!event) return;
 
-    if (platform === "funcheap") {
+    if (platform === "funcheapsf") {
       autofillFuncheap(event);
     }else if(platform === "visitoakland"){
       autofillVisitOakland(event);
@@ -326,10 +491,10 @@ function runAutofill() {
   });
 }
 
-// 1. Read from localStorage
+// Decide whether this content script is running on the LocalBuzz app
+// or on a supported partner submission site.
 const hostname = window.location.hostname;
-
-if (hostname.includes("localhost")) {
+if (hostname.includes("localhost") || hostname === "bep-ui.onrender.com"){
   setupSender();
 } else {
   runAutofill();

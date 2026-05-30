@@ -20,7 +20,7 @@
         "*://*.sfstation.com/*",
         "*://sfstation.com/*"
       ],
-      "js": ["mappings.js","content.js"]
+      "js": ["mappings.js", "categoryMappings.js","content.js"]
     }
   ]
 }
