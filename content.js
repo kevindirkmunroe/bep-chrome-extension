@@ -131,6 +131,8 @@ async function selectSfStationCategory(categoryName) {
   option.click();
 
   input.dispatchEvent(new Event("change", { bubbles: true }));
+  input.style.border = "5px solid #F89D86";
+  input.style.borderRadius = "5px";
   input.blur();
 
   console.log("[SFStation] selected category:", categoryName);
@@ -427,8 +429,8 @@ function autofillVisitOakland(event) {
   setSelectValue(document.querySelector("#state"), "CA");
 
   const voCategory = CATEGORY_MAPPINGS.visitoakland[event.category];
-  console.log(`category ${event.category} vo ${voCategory}`);
   selectMultiSelectOptionByText("#categories", voCategory);
+  selectDropdownByText(document.querySelector("#udf_91"), event.region);
 }
 
 const indyBayDate = (hour, ampm) => {
