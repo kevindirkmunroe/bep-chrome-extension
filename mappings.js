@@ -65,6 +65,7 @@ const funCheapsfCategoryMap = {
 const funcheapMap = {
     title: "#input_18_1",
     email: "#input_18_43",
+    address: "#input_18_9",
     location_name: "#input_18_8",
     description: "#input_18_2",
     website: "#input_18_30",
@@ -92,14 +93,16 @@ const indyBayMap = {
     email: '#email',
     title: '#title1',
     phone: '#phone',
-    description: '#text',
-    location: '#summary'
+    description: "[name='text']",
+    location_name: "[name='summary']",
+    website: "[name='related_url']"
 }
 
 const sfstationMap = {
     title: "[name='name']",
     description: '#description',
-    location: "[name='location']"
+    location_name: "[name='location']",
+    website: "#contact_url"
 }
 
 const SELECTOR_MAPPINGS = {

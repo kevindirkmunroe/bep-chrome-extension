@@ -1,3 +1,5 @@
+console.log("[LocalBuzz EXT] loaded from current build VERSION 2026-05-30-001");
+
 function formatDateForFuncheap(datetime) {
   const d = new Date(datetime);
 
@@ -314,6 +316,8 @@ function waitAndSet(selector, value) {
       el.style.border = "5px solid #F89D86";
       el.style.borderRadius = "5px";
       console.log("Filled:", selector);
+    }else{
+      console.log("Selector not found: ", selector);
     }
   }, 1000);
 }
@@ -458,6 +462,8 @@ function autofillIndyBay(event) {
   selectDropdownByText(document.querySelector("#displayed_date_year"), year);
   selectDropdownByText(document.querySelector("#displayed_date_hour"), indyBayDate(hour, ampm));
 
+  // SWAG number, user can change...
+  selectDropdownByText(document.querySelector("#event_duration"), "3:00");
 }
 
 function autofillSFStation(event) {
