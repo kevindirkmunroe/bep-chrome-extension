@@ -85,7 +85,8 @@ const visitOaklandMap = {
     organization: "#contact",
     address: "#addr1",
     price: "#admission",
-    website: "#linkurl"
+    website: "#linkurl",
+    zip: "#zip"
 }
 
 const indyBayMap = {

@@ -322,6 +322,21 @@ function waitAndSet(selector, value) {
   }, 1000);
 }
 
+function splitLocalDateTime(dt) {
+  const normalized = dt.replace(" ", "T");
+  const [datePart, timePartRaw] = normalized.split("T");
+  const [year, month, day] = datePart.split("-");
+  const [hour, minute] = timePartRaw.slice(0, 5).split(":");
+
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute
+  };
+}
+
 function setupSender() {
   window.addEventListener("message", (event) => {
     if (!chrome?.runtime?.id) {
@@ -329,7 +344,6 @@ function setupSender() {
       return;
     }
 
-    console.log(`LOCALBUZZ_AUTOFILL by key: final.`);
     if (event.source !== window) return;
     const eventDataType = event.data?.type;
     console.log(`event.data.type ${eventDataType}`);
@@ -344,6 +358,7 @@ function setupSender() {
     console.log("[bridge] received from LocalBuzz React", job);
 
     try {
+
       console.log("[bridge] about to store job...");
       chrome.storage.local.set(
           { [eventDataType]: job },
@@ -412,7 +427,12 @@ function autofillFuncheap(event) {
     // checkboxes and radio buttons. Pick most common options...
     clickAndHighlight('#label_18_128_0'); // Frequency: Single Day Event
     clickAndHighlight('#label_18_106_1'); // Online or In-Person: In Person
-    clickAndHighlight('#label_18_107_0'); // Free or Paid: Free
+    if(event.price){
+      clickAndHighlight('#label_18_107_1'); // Free or Paid: Paid
+      waitAndSet("#input_18_111", event.price);
+    }else {
+      clickAndHighlight('#label_18_107_0'); // Free or Paid: Free
+    }
 
     const select = document.querySelector("#input_18_133");
     if (select && event.region) {
@@ -425,11 +445,12 @@ function autofillVisitOakland(event) {
   console.log("Autofilling VisitOakland", event);
 
   autofillFromMap(event, SELECTOR_MAPPINGS.visitoakland);
-
-  const  {hour, minute, ampm} =  parseTime(event.start_datetime);
-  waitAndSet("#starttime", `${hour}:${minute} ${ampm}`);
+  const { event_hour_12, event_minute, event_ampm} = event.date_fields;
+  waitAndSet("#starttime", `${event_hour_12}:${event_minute} ${event_ampm}`);
   waitAndSet("#email", event.email);
   waitAndSet("#phone", event.phone);
+  console.log(`setting #city to ${event.city}`);
+  waitAndSet("#city", event.city);
   setSelectValue(document.querySelector("#state"), "CA");
 
   const voCategory = CATEGORY_MAPPINGS.visitoakland[event.category];
@@ -445,7 +466,10 @@ const indyBayDate = (hour, ampm) => {
       return 'Noon';
     }
   }
-  return `${hour} ${ampm}`;
+  if(hour > 12){
+    return `${24 - hour} ${ampm.toUpperCase()}`;
+  }
+  return `${hour} ${ampm.toUpperCase()}`;
 }
 
 function autofillIndyBay(event) {
@@ -456,11 +480,15 @@ function autofillIndyBay(event) {
   selectDropdownByText(document.querySelector("#topic_id"), "Arts + Action");
   selectDropdownByText(document.querySelector("#event_type_id"), "Other");
   // Date has 4 fields
-  const  {month, day, year, hour, ampm} =  parseTime(event.start_datetime);
-  selectDropdownByText(document.querySelector("#displayed_date_month"), month);
+  const { year, month, day } =
+      splitLocalDateTime(event.start_datetime);
+  const { event_hour_12, event_ampm } = event.date_fields;
+  const trimmedMonth = month.startsWith('0') ? month.substring(1) : month;
+  selectDropdownByText(document.querySelector("#displayed_date_month"), trimmedMonth);
   selectDropdownByText(document.querySelector("#displayed_date_day"), day);
   selectDropdownByText(document.querySelector("#displayed_date_year"), year);
-  selectDropdownByText(document.querySelector("#displayed_date_hour"), indyBayDate(hour, ampm));
+  selectDropdownByText(document.querySelector("#displayed_date_hour"), indyBayDate(event_hour_12, event_ampm));
+  selectDropdownByText(document.querySelector("#region_id"), event.region);
 
   // SWAG number, user can change...
   selectDropdownByText(document.querySelector("#event_duration"), "3:00");
@@ -477,6 +505,7 @@ function runAutofill() {
   console.log(`Running autofill...`);
   const platform = detectPlatform();
   const key = `LOCALBUZZ_AUTOFILL_${platform}`;
+
   chrome.storage.local.get(key, (data) => {
     const event = data[key]?.payload;
 
