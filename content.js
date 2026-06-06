@@ -1,4 +1,4 @@
-console.log("[LocalBuzz EXT] loaded from current build VERSION 2026-05-30-001");
+// console.log("[LocalBuzz EXT] loaded from current build VERSION 2026-05-30-001");
 
 function formatDateForFuncheap(datetime) {
   const d = new Date(datetime);
@@ -68,7 +68,7 @@ function selectDropdownByText(selectEl, targetText) {
   selectEl.style.border = "5px solid #F89D86";
   selectEl.style.borderRadius = "5px";
 
-  console.log(`✅ Selected ${match.text} (${match.value})`);
+  // console.log(`✅ Selected ${match.text} (${match.value})`);
 }
 
 // Helper for setting value in form in case straightup element.value = "XYZ" doesn't work
@@ -137,7 +137,7 @@ async function selectSfStationCategory(categoryName) {
   input.style.borderRadius = "5px";
   input.blur();
 
-  console.log("[SFStation] selected category:", categoryName);
+  // console.log("[SFStation] selected category:", categoryName);
   return true;
 }
 
@@ -190,7 +190,7 @@ function selectMultiSelectOptionByText(selector, targetText) {
     select.dispatchEvent(new Event("input", {bubbles: true}));
     select.dispatchEvent(new Event("change", {bubbles: true}));
 
-    console.log("Selected:", targetText, match.value);
+    // console.log("Selected:", targetText, match.value);
   }catch(err){
     console.error(`Error on selectMultiSelectOptionByText: ${err}`);
   }
@@ -204,7 +204,7 @@ function clickAndHighlight(selector){
   el.click();
   el.style.border = "5px solid #F89D86";
   el.style.borderRadius = "5px";
-  console.log("Clicked:", selector);
+  // console.log("Clicked:", selector);
 }
 
 //
@@ -214,7 +214,7 @@ function setTextarea(selector, value) {
   const textarea = document.querySelector(selector);
 
   if (!textarea) {
-    console.log("textarea not found");
+    // console.log("textarea not found");
     return;
   }
   textarea.focus();
@@ -260,7 +260,7 @@ const injectImage = async (base64, filename, mimeType) => {
   // 🔥 trigger ALL relevant events
   fileInput.dispatchEvent(new Event("input", { bubbles: true }));
   fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-  console.log("✅ Image injected");
+  // console.log("✅ Image injected");
 };
 
 //
@@ -270,22 +270,22 @@ function setTinyMCE(selector, value) {
   const iframe = document.querySelector(selector);
 
   if (!iframe) {
-    console.log("TinyMCE iframe not found");
+    // console.log("TinyMCE iframe not found");
     return;
   }
   const doc = iframe.contentDocument || iframe.contentWindow.document;
   if (!doc) {
-    console.log("No iframe document");
+    // console.log("No iframe document");
     return;
   }
   const body = doc.querySelector("#tinymce");
 
   if (!body) {
-    console.log("TinyMCE body not found");
+    // console.log("TinyMCE body not found");
     return;
   }
   body.innerHTML = `<p>${value}</p>`;
-  console.log("TinyMCE content set");
+  // console.log("TinyMCE content set");
 }
 
 function waitAndSetTinyMCE(selector, value) {
@@ -315,9 +315,9 @@ function waitAndSet(selector, value) {
 
       el.style.border = "5px solid #F89D86";
       el.style.borderRadius = "5px";
-      console.log("Filled:", selector);
+      // console.log("Filled:", selector);
     }else{
-      console.log("Selector not found: ", selector);
+      // console.log("Selector not found: ", selector);
     }
   }, 1000);
 }
@@ -338,6 +338,19 @@ function splitLocalDateTime(dt) {
 }
 
 function setupSender() {
+
+  window.addEventListener("message", (event) => {
+    if (event.data?.type === "LOCALBUZZ_PING") {
+      window.postMessage(
+          {
+            type: "LOCALBUZZ_PONG",
+            version: chrome.runtime.getManifest().version
+          },
+          "*"
+      );
+    }
+  });
+
   window.addEventListener("message", (event) => {
     if (!chrome?.runtime?.id) {
       console.warn("[LocalBuzz] extension context invalidated");
@@ -346,7 +359,7 @@ function setupSender() {
 
     if (event.source !== window) return;
     const eventDataType = event.data?.type;
-    console.log(`event.data.type ${eventDataType}`);
+    // console.log(`event.data.type ${eventDataType}`);
     if (!eventDataType?.startsWith("LOCALBUZZ_AUTOFILL")) return;
 
     const job = {
@@ -355,11 +368,11 @@ function setupSender() {
       createdAt: Date.now()
     };
 
-    console.log("[bridge] received from LocalBuzz React", job);
+    // console.log("[bridge] received from LocalBuzz React", job);
 
     try {
 
-      console.log("[bridge] about to store job...");
+      // console.log("[bridge] about to store job...");
       chrome.storage.local.set(
           { [eventDataType]: job },
           () => {
@@ -368,14 +381,14 @@ function setupSender() {
               return;
             }
 
-            console.log("[bridge] saved job");
+            // console.log("[bridge] saved job");
 
             chrome.storage.local.get(key, (result) => {
-              console.log("[bridge] read back:", result);
+              // console.log("[bridge] read back:", result);
             });
           }
       );
-      console.log("[bridge] done.");
+      // console.log("[bridge] done.");
     } catch (err) {
       console.error("[bridge] exception during storage set:", err);
     }
@@ -397,19 +410,19 @@ function autofillFromMap(event, map) {
 }
 
 function autofillFuncheap(event) {
-  console.log("Autofilling FuncheapSF", event);
+  // console.log("Autofilling FuncheapSF", event);
 
   autofillFromMap(event, SELECTOR_MAPPINGS.funcheapsf);
   waitAndSetTinyMCE("#input_18_2_ifr", event.description);
   waitAndSet("#input_18_43_2", event.email);
 
   // translate canonical category to fc category...
-  console.log(`event.category=${event.category}`);
+  // console.log(`event.category=${event.category}`);
   const fcCategory = CATEGORY_MAPPINGS.funcheapsf[event.category];
-  console.log(`event.category=${event.category}, fcCategory=${fcCategory}`);
+  // console.log(`event.category=${event.category}, fcCategory=${fcCategory}`);
   // then get selector for fc category...
   const fcCategorySelector = SELECTOR_MAPPINGS.funcheapsfCategories[fcCategory];
-  console.log(`event.category=${event.category}, fcCategory=${fcCategory}, fcCategorySelector=${fcCategorySelector}`);
+  // console.log(`event.category=${event.category}, fcCategory=${fcCategory}, fcCategorySelector=${fcCategorySelector}`);
   if (fcCategorySelector) {
     clickAndHighlight(fcCategorySelector); // Online or In-Person: In Person
   }
@@ -442,14 +455,14 @@ function autofillFuncheap(event) {
 }
 
 function autofillVisitOakland(event) {
-  console.log("Autofilling VisitOakland", event);
+  // console.log("Autofilling VisitOakland", event);
 
   autofillFromMap(event, SELECTOR_MAPPINGS.visitoakland);
   const { event_hour_12, event_minute, event_ampm} = event.date_fields;
   waitAndSet("#starttime", `${event_hour_12}:${event_minute} ${event_ampm}`);
   waitAndSet("#email", event.email);
   waitAndSet("#phone", event.phone);
-  console.log(`setting #city to ${event.city}`);
+  // console.log(`setting #city to ${event.city}`);
   waitAndSet("#city", event.city);
   setSelectValue(document.querySelector("#state"), "CA");
 
@@ -473,7 +486,7 @@ const indyBayDate = (hour, ampm) => {
 }
 
 function autofillIndyBay(event) {
-  console.log("Autofilling IndyBay", event);
+  // console.log("Autofilling IndyBay", event);
 
   autofillFromMap(event, SELECTOR_MAPPINGS.indybay);
 
@@ -495,24 +508,24 @@ function autofillIndyBay(event) {
 }
 
 function autofillSFStation(event) {
-  console.log("Autofilling SFStation", event);
+  // console.log("Autofilling SFStation", event);
   autofillFromMap(event, SELECTOR_MAPPINGS.sfstation);
   const sfstationCategory = CATEGORY_MAPPINGS.sfstation[event.category];
   selectSfStationCategory(sfstationCategory);
 }
 
 function runAutofill() {
-  console.log(`Running autofill...`);
+  // console.log(`Running autofill...`);
   const platform = detectPlatform();
   const key = `LOCALBUZZ_AUTOFILL_${platform}`;
 
   chrome.storage.local.get(key, (data) => {
     const event = data[key]?.payload;
 
-    console.log("key:", key);
-    console.log("raw data:", data);
+    // console.log("key:", key);
+    // console.log("raw data:", data);
     const job = data[key];
-    console.log("job:", job);
+    // console.log("job:", job);
 
     if (!event) return;
 
