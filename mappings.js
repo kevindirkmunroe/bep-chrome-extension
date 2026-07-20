@@ -89,6 +89,13 @@ const visitOaklandMap = {
     zip: "#zip"
 }
 
+const doTheBayMap = {
+    name: "#event_presented_by",
+    title: "#event_title",
+    location_name: "#venue_title_es",
+    website: "#event_buy_tickets"
+}
+
 const indyBayMap = {
     name: '#displayed_author_name',
     email: '#email',
@@ -111,5 +118,6 @@ const SELECTOR_MAPPINGS = {
     indybay: indyBayMap,
     visitoakland: visitOaklandMap,
     funcheapsf: funcheapMap,
+    dothebay: doTheBayMap,
     funcheapsfCategories: funCheapsfCategoryMap
 }

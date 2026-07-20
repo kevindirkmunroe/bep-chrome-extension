@@ -19,6 +19,8 @@ function detectPlatform(){
     return "indybay";
   }else if(window.location.hostname.includes("sfstation")){
     return "sfstation";
+  }else if(window.location.hostname.includes("dothebay")){
+    return "dothebay";
   }
 }
 
@@ -264,6 +266,221 @@ const injectImage = async (base64, filename, mimeType) => {
 };
 
 //
+// Helpers for Chosen.js
+//
+function setChosenDropdown(container, desiredValue) {
+  if (!container) {
+    console.warn("Chosen container not found");
+    return false;
+  }
+
+  const trigger = Array.from(container.children).find(
+      child =>
+          child instanceof HTMLElement &&
+          child.classList.contains("chzn-single")
+  );
+
+  if (!trigger) {
+    console.warn(
+        "Chosen trigger not found. Children:",
+        Array.from(container.children).map(child => ({
+          tag: child.tagName,
+          className: child.className
+        }))
+    );
+
+    return false;
+  }
+
+  trigger.dispatchEvent(
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  trigger.dispatchEvent(
+      new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  trigger.click();
+
+  const options = Array.from(
+      container.querySelectorAll(
+          ".chzn-results li.active-result"
+      )
+  );
+
+  const matchingOption = options.find(
+      option =>
+          option.textContent.trim() === desiredValue.trim()
+  );
+
+  console.log("Desired Chosen value:", desiredValue);
+  console.log(
+      "Matching option:",
+      matchingOption
+          ? matchingOption.textContent.trim()
+          : null
+  );
+
+  if (!matchingOption) {
+    console.warn(
+        "Chosen option not found:",
+        desiredValue,
+        "Available options:",
+        options.map(option => option.textContent.trim())
+    );
+
+    return false;
+  }
+
+  matchingOption.dispatchEvent(
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  matchingOption.dispatchEvent(
+      new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  matchingOption.click();
+
+  return true;
+}
+
+function setChosenElement(container, desiredValue) {
+  if (!container) {
+    return false;
+  }
+
+  const trigger = container.querySelector(".chzn-single");
+  const matchingOption = Array.from(
+      container.querySelectorAll(".chzn-results li")
+  ).find(
+      option => option.textContent?.trim() === desiredValue
+  );
+
+  if (!trigger || !matchingOption) {
+    return false;
+  }
+
+  trigger.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true })
+  );
+
+  matchingOption.dispatchEvent(
+      new MouseEvent("mouseup", { bubbles: true })
+  );
+
+  matchingOption.click();
+
+  return true;
+}
+
+function setChosenCategory(
+    container,
+    desiredValue,
+) {
+  if (!container) {
+    console.warn("Category Chosen container not found");
+    return false;
+  }
+
+  const trigger = container.querySelector<HTMLElement>(".chzn-single");
+
+  if (!trigger) {
+    console.warn("Category trigger not found");
+    return false;
+  }
+
+  // Open the Chosen dropdown
+  trigger.dispatchEvent(
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  trigger.dispatchEvent(
+      new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  trigger.click();
+
+  const options = Array.from(
+      container.querySelectorAll<HTMLElement>(
+          ".chzn-results li.active-result"
+      )
+  );
+
+  const matchingOption = options.find(
+      option => option.textContent?.trim() === desiredValue.trim()
+  );
+
+  console.log(
+      "Matching category option:",
+      matchingOption?.textContent?.trim()
+  );
+
+  if (!matchingOption) {
+    console.warn(`Category option not found: ${desiredValue}`);
+    return false;
+  }
+
+  // Chosen normally selects on mouseup, not click
+  matchingOption.dispatchEvent(
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  matchingOption.dispatchEvent(
+      new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+  );
+
+  matchingOption.click();
+
+  return true;
+}
+
+function formatDoTheBayHour(dateTime) {
+  const date = new Date(dateTime);
+  let hour = date.getHours();
+  const period = hour >= 12 ? "PM" : "AM";
+
+  hour %= 12;
+  hour = hour || 12;
+
+  return hour === 12
+      ? `12 ${period}`
+      : `${String(hour).padStart(2, "0")} ${period}`;
+}
+
+//
 // Helpers for Wordpress text areas: MCE
 //
 function setTinyMCE(selector, value) {
@@ -468,6 +685,7 @@ function autofillVisitOakland(event) {
 
   const voCategory = CATEGORY_MAPPINGS.visitoakland[event.category];
   selectMultiSelectOptionByText("#categories", voCategory);
+
   selectDropdownByText(document.querySelector("#udf_91"), event.region);
 }
 
@@ -510,8 +728,36 @@ function autofillIndyBay(event) {
 function autofillSFStation(event) {
   // console.log("Autofilling SFStation", event);
   autofillFromMap(event, SELECTOR_MAPPINGS.sfstation);
-  const sfstationCategory = CATEGORY_MAPPINGS.sfstation[event.category];
-  selectSfStationCategory(sfstationCategory);
+}
+
+function autofillDoTheBay(event) {
+  console.log("Autofilling DoTheBay", event);
+  autofillFromMap(event, SELECTOR_MAPPINGS.dothebay);
+
+  // calendar date
+  const { year, month, day, hour, ampm }
+      = parseTime(event.start_datetime);
+  waitAndSet("#event_begin_date", `${year}-${month}-${day}`);
+
+  // start time
+  const beginTimeContainer = document.querySelector(
+      '[id^="event_begin_time_"][id$="_chzn"]'
+  );
+
+  setChosenElement(beginTimeContainer, formatDoTheBayHour(event.start_datetime));
+  beginTimeContainer.style.border = "5px solid #F89D86";
+  beginTimeContainer.style.borderRadius = "5px";
+
+  // category
+  const dtbCategory = CATEGORY_MAPPINGS.dothebay[event.category.trim()];
+  console.log(`Category key: ${event.category} value: ${dtbCategory}`);
+  const categoryContainer = document.querySelector(
+      '[id^="event_category_id_"][id$="_chzn"]'
+  );
+  setChosenDropdown(categoryContainer, dtbCategory);
+  categoryContainer.style.border = "5px solid #F89D86";
+  categoryContainer.style.borderRadius = "5px";
+
 }
 
 function runAutofill() {
@@ -521,12 +767,6 @@ function runAutofill() {
 
   chrome.storage.local.get(key, (data) => {
     const event = data[key]?.payload;
-
-    // console.log("key:", key);
-    // console.log("raw data:", data);
-    const job = data[key];
-    // console.log("job:", job);
-
     if (!event) return;
 
     if (platform === "funcheapsf") {
@@ -537,6 +777,8 @@ function runAutofill() {
       autofillIndyBay(event);
     }else if(platform === "sfstation"){
       autofillSFStation(event);
+    }else if(platform === "dothebay"){
+      autofillDoTheBay(event);
     }
   });
 }

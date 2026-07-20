@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LocalBuzz Event Autofill",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -15,7 +15,8 @@
         "https://sf.funcheap.com/*",
         "https://www.visitoakland.com/*",
         "https://www.indybay.org/*",
-        "https://www.sfstation.com/*"
+        "https://www.sfstation.com/*",
+        "https://dothebay.com/*"
       ],
       "js": ["mappings.js", "categoryMappings.js","content.js"]
     }

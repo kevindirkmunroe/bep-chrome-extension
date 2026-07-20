@@ -67,8 +67,33 @@ const VISITOAKLAND_CATEGORY_MAP = {
     "Nightlife": "Nightlife"
 };
 
+const DOTHEBAY_CATEGORY_MAP = {
+    Music: "Music",
+    Comedy: "Comedy",
+    Theater: "Theatre & Performing Arts",
+    Dance: "Dance",
+    Art: "The Arts",
+    Film: "Film",
+    "Food & Wine": "Food & Drink",
+    Festival: "Festival",
+    Nightlife: "DJ/Parties",
+    Community: "Experiences",
+    Networking: "Lecture/Education",
+    Charity: "Activism",
+    Classes: "Lecture/Education",
+    Workshop: "Lecture/Education",
+    Family: "Arts & Family",
+    Sports: "Sports",
+    Fitness: "Outdoor & Recreation",
+    LGBTQ: "LGBTQ",
+    Shopping: "Shopping",
+    Holiday: "Holiday Event",
+    Other: "Variety"
+};
+
 const CATEGORY_MAPPINGS = {
     sfstation: SFSTATION_CATEGORY_MAP,
     visitoakland: VISITOAKLAND_CATEGORY_MAP,
     funcheapsf: FUNCHEAP_CATEGORY_MAP,
+    dothebay: DOTHEBAY_CATEGORY_MAP
 }
