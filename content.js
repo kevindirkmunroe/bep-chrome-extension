@@ -321,13 +321,13 @@ function setChosenDropdown(container, desiredValue) {
           option.textContent.trim() === desiredValue.trim()
   );
 
-  console.log("Desired Chosen value:", desiredValue);
-  console.log(
-      "Matching option:",
-      matchingOption
-          ? matchingOption.textContent.trim()
-          : null
-  );
+  // console.log("Desired Chosen value:", desiredValue);
+  // console.log(
+  //     "Matching option:",
+  //     matchingOption
+  //         ? matchingOption.textContent.trim()
+  //         : null
+  // );
 
   if (!matchingOption) {
     console.warn(
@@ -435,10 +435,10 @@ function setChosenCategory(
       option => option.textContent?.trim() === desiredValue.trim()
   );
 
-  console.log(
-      "Matching category option:",
-      matchingOption?.textContent?.trim()
-  );
+  // console.log(
+  //     "Matching category option:",
+  //     matchingOption?.textContent?.trim()
+  // );
 
   if (!matchingOption) {
     console.warn(`Category option not found: ${desiredValue}`);
@@ -728,10 +728,14 @@ function autofillIndyBay(event) {
 function autofillSFStation(event) {
   // console.log("Autofilling SFStation", event);
   autofillFromMap(event, SELECTOR_MAPPINGS.sfstation);
+  // category
+  const sfsCategory = CATEGORY_MAPPINGS.sfstation[event.category.trim()];
+  // console.log(`sfstation: category: ${event.category} mapping ${sfsCategory}`);
+  selectSfStationCategory(sfsCategory);
 }
 
 function autofillDoTheBay(event) {
-  console.log("Autofilling DoTheBay", event);
+  // console.log("Autofilling DoTheBay", event);
   autofillFromMap(event, SELECTOR_MAPPINGS.dothebay);
 
   // calendar date
@@ -750,7 +754,7 @@ function autofillDoTheBay(event) {
 
   // category
   const dtbCategory = CATEGORY_MAPPINGS.dothebay[event.category.trim()];
-  console.log(`Category key: ${event.category} value: ${dtbCategory}`);
+  // console.log(`Category key: ${event.category} value: ${dtbCategory}`);
   const categoryContainer = document.querySelector(
       '[id^="event_category_id_"][id$="_chzn"]'
   );
