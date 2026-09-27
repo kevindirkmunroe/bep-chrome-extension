@@ -28,8 +28,8 @@ const parseTime = (isoString) => {
   if (!isoString) return { hour: "", minute: "", ampm: "AM" };
 
   const date = new Date(isoString);
-  const month = date.getMonth();
-  const day = date.getDay();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
   const year = date.getFullYear();
 
   let hours = date.getHours(); // 0–23
@@ -741,6 +741,8 @@ function autofillDoTheBay(event) {
   // calendar date
   const { year, month, day, hour, ampm }
       = parseTime(event.start_datetime);
+  console.log(`Autofilling DoTheBay, from ${event.start_datetime} => date: ${year}-${month}-${day}`);
+
   waitAndSet("#event_begin_date", `${year}-${month}-${day}`);
 
   // start time

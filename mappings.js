@@ -93,7 +93,9 @@ const doTheBayMap = {
     name: "#event_presented_by",
     title: "#event_title",
     location_name: "#venue_title_es",
-    website: "#event_buy_tickets"
+    website: "#event_buy_tickets",
+    price: "#event_ticket_info",
+    start_datetime: "#event_begin_date"
 }
 
 const indyBayMap = {
