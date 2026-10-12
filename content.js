@@ -797,3 +797,32 @@ if (hostname.includes("localhost") || hostname === "bep-ui.onrender.com"){
 } else {
   runAutofill();
 }
+
+//
+// Listen for 'submit' button on Platform's form so we can mark
+// Event.platform as submitted.
+//
+document.addEventListener("submit", (event) => {
+  console.log("Form submitted:", event.target);
+
+  chrome.runtime.sendMessage({
+    type: "FORM_SUBMITTED",
+    url: window.location.href
+  });
+}, true);
+
+//
+// Runs in the Airhorn tab
+//
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "PLATFORM_FORM_SUBMITTED") {
+
+    window.dispatchEvent(
+        new CustomEvent("AIRHORN_PLATFORM_SUBMITTED", {
+          detail: {
+            platformUrl: message.platformUrl
+          }
+        })
+    );
+  }
+});

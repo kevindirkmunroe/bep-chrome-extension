@@ -11,6 +11,8 @@
     {
       "matches": [
         "http://localhost:4150/*",
+        "http://localhost:8000/*",
+        "https://airhorn.events/*",
         "https://bep-ui.onrender.com/*",
         "https://sf.funcheap.com/*",
         "https://www.visitoakland.com/*",
