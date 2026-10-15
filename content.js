@@ -569,6 +569,36 @@ function setupSender() {
   });
 
   window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type !== "AIRHORN_INSPECT_FORM") return;
+
+    console.log(`[content.js] sending msg AGENT_START_INSPECTION`);
+    // chrome.runtime.sendMessage({
+    //   type: "AGENT_START_INSPECTION",
+    //   platform: event.data.platform
+    // });
+
+    chrome.runtime.sendMessage(
+        {
+          type: "AGENT_START_INSPECTION",
+          platform: event.data.platform
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error(
+                "[content.js] Message error:",
+                chrome.runtime.lastError.message
+            );
+            return;
+          }
+
+          console.log("[content.js] Background response:", response);
+        }
+    );
+  });
+
+  window.addEventListener("message", (event) => {
     if (!chrome?.runtime?.id) {
       console.warn("[LocalBuzz] extension context invalidated");
       return;
@@ -792,7 +822,7 @@ function runAutofill() {
 // Decide whether this content script is running on the LocalBuzz app
 // or on a supported partner submission site.
 const hostname = window.location.hostname;
-if (hostname.includes("localhost") || hostname === "bep-ui.onrender.com"){
+if (hostname.includes("localhost") || hostname === "bep-ui.onrender.com" || hostname === "app.airhorn.com"){
   setupSender();
 } else {
   runAutofill();
@@ -826,3 +856,60 @@ chrome.runtime.onMessage.addListener((message) => {
     );
   }
 });
+
+//
+// Inspect a form and return all its editable fields.
+//
+function inspectForm() {
+  console.log(`[content.js] at inspectForm()...`);
+
+  const fields = [
+    ...document.querySelectorAll(
+        "input, textarea, select"
+    )
+  ];
+
+  return fields
+      .filter(el =>
+          el.type !== "hidden" &&
+          el.type !== "submit" &&
+          el.type !== "button"
+      )
+      .map((el, index) => ({
+        index,
+        tag: el.tagName.toLowerCase(),
+        type: el.type || null,
+        id: el.id || null,
+        name: el.name || null,
+        label:
+            el.labels?.[0]?.innerText ||
+            el.getAttribute("aria-label") ||
+            el.placeholder ||
+            null,
+        value: el.value || "",
+        options:
+            el.tagName === "SELECT"
+                ? [...el.options].map(o => ({
+                  value: o.value,
+                  text: o.text
+                }))
+                : undefined
+      }));
+}
+
+//
+// Listen for INSPECT request.
+// Return form field data.
+//
+chrome.runtime.onMessage.addListener(
+    (message, sender, sendResponse) => {
+      if (message.type === "AGENT_INSPECT_FORM") {
+        console.log(`[content.js] got AGENT_INSPECT_FORM`);
+        sendResponse({
+          success: true,
+          url: location.href,
+          fields: inspectForm()
+        });
+      }
+    }
+);

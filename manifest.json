@@ -18,6 +18,7 @@
         "https://www.visitoakland.com/*",
         "https://www.indybay.org/*",
         "https://www.sfstation.com/*",
+        "https://hub.cityspark.com/*",
         "https://dothebay.com/*"
       ],
       "js": ["mappings.js", "categoryMappings.js","content.js"]
