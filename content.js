@@ -1,4 +1,5 @@
 // console.log("[LocalBuzz EXT] loaded from current build VERSION 2026-05-30-001");
+console.log("[AIRHORN] Content script loaded:", window.location.href);
 
 function formatDateForFuncheap(datetime) {
   const d = new Date(datetime);
@@ -21,6 +22,8 @@ function detectPlatform(){
     return "sfstation";
   }else if(window.location.hostname.includes("dothebay")){
     return "dothebay";
+  }else if(window.location.hostname.includes("patch")){
+    return "patch";
   }else if(window.location.hostname.includes("cityspark")){
     if(window.location.pathname.includes("EastBayTimes")){
       return "eastbaytimes";
@@ -55,6 +58,37 @@ const parseTime = (isoString) => {
     ampm                                 // "PM"
   };
 };
+
+// Helper for rich text editors like ProseMirror
+// and other React-based editors
+function setRichTextValue(el, value) {
+  if (!el || el.getAttribute("contenteditable") !== "true") {
+    throw new Error("Editable element not found");
+  }
+
+  el.focus();
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+
+  range.selectNodeContents(el);
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  const inserted = document.execCommand(
+      "insertText",
+      false,
+      String(value)
+  );
+
+  if (!inserted) {
+    throw new Error("Rich-text insertion failed");
+  }
+
+  el.dispatchEvent(new Event("input", {
+    bubbles: true
+  }));
+}
 
 // Helper for Region dropdown
 function selectDropdownByText(selectEl, targetText) {
@@ -969,6 +1003,108 @@ function autofillCitySpark(event){
   startInput.style.borderRadius = "5px";
 }
 
+function patch_setReactInputValue(el, value) {
+  const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+  )?.set;
+
+  setter.call(el, String(value));
+
+  el.dispatchEvent(new Event("input", {
+    bubbles: true
+  }));
+}
+
+function patch_setTimePicker(timePicker, ampmGroup, time) {
+  // Accepts "9:00 AM", "12:30 PM", etc.
+  const match = String(time).trim().match(
+      /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i
+  );
+
+  if (!match) {
+    throw new Error(`Invalid time format: ${time}`);
+  }
+
+  const [, hour, minute, period] = match;
+
+  if (+hour < 1 || +hour > 12 || +minute > 59) {
+    throw new Error(`Invalid time: ${time}`);
+  }
+
+  const hourInput = timePicker.querySelector(
+      'input[type="number"][min="1"][max="12"]'
+  );
+
+  const minuteInput = timePicker.querySelector(
+      'input[type="number"][min="0"][max="59"]'
+  );
+
+  if (!hourInput || !minuteInput) {
+    throw new Error("Time inputs not found");
+  }
+
+  function setNumberInput(el, value) {
+    const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+    ).set;
+
+    el.focus();
+    setter.call(el, value);
+
+    el.dispatchEvent(new Event("input", {
+      bubbles: true
+    }));
+
+    el.dispatchEvent(new Event("change", {
+      bubbles: true
+    }));
+
+    el.blur();
+  }
+
+  setNumberInput(hourInput, hour);
+  setNumberInput(minuteInput, minute);
+
+  // Click the AM/PM toggle to update React state
+  const button = [...ampmGroup.querySelectorAll("button")]
+      .find(btn => btn.textContent.trim().toUpperCase() === period.toUpperCase());
+
+  if (!button) {
+    throw new Error(`${period} button not found`);
+  }
+
+  if (!button.className.includes("toggle--active")) {
+    button.click();
+  }
+}
+
+function autofillPatch(event){
+  console.log(`Running autofill Patch...`);
+
+  const zipElement = document.querySelector(
+      'input[role="combobox"][aria-label="Find a community on Patch by entering a town name or ZIP code"]'
+  );
+  patch_setReactInputValue(zipElement, event.zip);
+  waitAndSet('input[name="eventAddress"]', event.address);
+  waitAndSet('input[name="eventTitle"]', event.title);
+
+  const df = event.date_fields;
+  waitAndSet('input[aria-label="Event Date', `${shortMonth(df.event_month)} ${df.event_day} ${df.event_year}`);
+  const editor = document.querySelector(
+      '[contenteditable="true"].rx-editor[placeholder="Event description"]'
+  );
+  const timePicker = document.querySelector(
+      '[class*="__timePicker"]'
+  );
+  const ampmGroup = document.querySelector(
+      '[class*="__DateTimeField__btn-group"]'
+  );
+  patch_setTimePicker(timePicker, ampmGroup, `${df.event_hour_12}:${df.event_minute} ${df.event_ampm}`);
+
+  setRichTextValue(editor, event.description);
+}
 
 function runAutofill() {
   console.log(`Running autofill...`);
@@ -993,6 +1129,8 @@ function runAutofill() {
       autofillCitySpark(event);
     }else if(platform === "eastbaytimes"){
       autofillCitySpark(event);
+    }else if(platform === "patch"){
+      autofillPatch(event);
     }
   });
 }

@@ -19,6 +19,7 @@
         "https://www.indybay.org/*",
         "https://www.sfstation.com/*",
         "https://hub.cityspark.com/*",
+        "https://patch.com/*",
         "https://dothebay.com/*"
       ],
       "js": ["mappings.js", "categoryMappings.js","content.js"]
