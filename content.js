@@ -21,6 +21,12 @@ function detectPlatform(){
     return "sfstation";
   }else if(window.location.hostname.includes("dothebay")){
     return "dothebay";
+  }else if(window.location.hostname.includes("cityspark")){
+    if(window.location.pathname.includes("EastBayTimes")){
+      return "eastbaytimes";
+    }else if(window.location.pathname.includes("EastBayMagazine")){
+      return "eastbaymagazine";
+    }
   }
 }
 
@@ -534,7 +540,7 @@ function waitAndSet(selector, value) {
       el.style.borderRadius = "5px";
       // console.log("Filled:", selector);
     }else{
-      // console.log("Selector not found: ", selector);
+      console.log("Selector not found: ", selector);
     }
   }, 1000);
 }
@@ -607,7 +613,7 @@ function setupSender() {
     if (event.source !== window) return;
     const eventDataType = event.data?.type;
     // console.log(`event.data.type ${eventDataType}`);
-    if (!eventDataType?.startsWith("LOCALBUZZ_AUTOFILL")) return;
+    if (!eventDataType?.startsWith("AIRHORN_AUTOFILL")) return;
 
     const job = {
       payload: event.data.payload,
@@ -615,7 +621,7 @@ function setupSender() {
       createdAt: Date.now()
     };
 
-    // console.log("[bridge] received from LocalBuzz React", job);
+    console.log("[bridge] received from Airhorn React", job);
 
     try {
 
@@ -793,13 +799,181 @@ function autofillDoTheBay(event) {
   setChosenDropdown(categoryContainer, dtbCategory);
   categoryContainer.style.border = "5px solid #F89D86";
   categoryContainer.style.borderRadius = "5px";
-
 }
 
+// function cityspark_setInputValue(el, value) {
+//   const setter = Object.getOwnPropertyDescriptor(
+//       HTMLInputElement.prototype,
+//       "value"
+//   )?.set;
+//
+//   if (!setter) {
+//     throw new Error("Native input setter not found");
+//   }
+//
+//   el.focus();
+//   setter.call(el, String(value));
+//
+//   el.dispatchEvent(new Event("input", {
+//     bubbles: true
+//   }));
+//
+//   el.dispatchEvent(new Event("change", {
+//     bubbles: true
+//   }));
+// }
+//
+// function cityspark_setInputByLabel(labelText, value) {
+//   const interval = setInterval(() => {
+//
+//     const group = [...document.querySelectorAll(".form-group")]
+//         .find(group => {
+//           const label = group.querySelector(":scope > label");
+//
+//           return label?.getAttribute("for") === labelText ||
+//               label?.textContent?.trim() === labelText;
+//         });
+//
+//     const el = group?.querySelector('input[type="text"]') ?? null;
+//     if (el) {
+//       clearInterval(interval);
+//       cityspark_setInputValue(el, value);
+//
+//       group.style.border = "5px solid #F89D86";
+//       group.style.borderRadius = "5px";
+//     }
+//   }, 1000);
+// }
+
+function cityspark_setInputValue(el, value) {
+  el.focus();
+
+  // ProseMirror rich-text editor
+  if (el.matches('.ProseMirror[contenteditable="true"]')) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+
+    range.selectNodeContents(el);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const inserted = document.execCommand(
+        "insertText",
+        false,
+        String(value)
+    );
+
+    if (!inserted) {
+      throw new Error("ProseMirror text insertion failed");
+    }
+
+    return;
+  }
+
+  // Standard HTML input
+  const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+  )?.set;
+
+  if (!setter) {
+    throw new Error("Native input setter not found");
+  }
+
+  setter.call(el, String(value));
+
+  el.dispatchEvent(new Event("input", {
+    bubbles: true
+  }));
+
+  el.dispatchEvent(new Event("change", {
+    bubbles: true
+  }));
+}
+
+function cityspark_setInputByLabel(labelText, value) {
+  const interval = setInterval(() => {
+
+    const group = [...document.querySelectorAll(".form-group")]
+        .find(group => {
+          const label = group.querySelector(":scope > label");
+
+          return label?.getAttribute("for") === labelText ||
+              label?.textContent?.trim() === labelText;
+        });
+
+    // Support both standard inputs and ProseMirror
+    const el = group?.querySelector(
+        'input[type="text"], .ProseMirror[contenteditable="true"]'
+    ) ?? null;
+
+    if (el) {
+      clearInterval(interval);
+
+      cityspark_setInputValue(el, value);
+
+      group.style.border = "5px solid #F89D86";
+      group.style.borderRadius = "5px";
+    }
+  }, 1000);
+}
+
+function shortMonth(month) {
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+
+  return months[Number(month) - 1] ?? null;
+}
+
+function autofillCitySpark(event){
+  console.log("Autofilling CitySpark", event);
+
+  waitAndSet('input[name="EventTitle"]', event.title);
+  waitAndSet('input[name="EventUrl"]', event.website);
+  waitAndSet('input[aria-controls="54-suggestions"]', event.location_name);
+
+  cityspark_setInputByLabel('Event Format', 'In-Person');
+  cityspark_setInputByLabel('Organization', event.organization);
+  cityspark_setInputByLabel('Contact Name', event.name);
+  cityspark_setInputByLabel('Email Address', event.email);
+  cityspark_setInputByLabel('Phone Number', event.phone);
+  cityspark_setInputByLabel('Description', event.description);
+  cityspark_setInputByLabel('Pricing Notes', event.price);
+
+  waitAndSet('input[name="address1"]', event.address_fields.street);
+  waitAndSet('input[aria-controls="59-suggestions"]', event.address_fields.city);
+  waitAndSet('input[name="StateCode"]', event.address_fields.state);
+  waitAndSet('input[name="Zip"]', event.address_fields.zip);
+
+  // Handle start date...
+  const dateInput = document.querySelector(
+      'input.mx-input[name="date"]:not([placeholder="start"]):not([placeholder="end"])'
+  );
+
+  const startInput = document.querySelector(
+      'input.mx-input[placeholder="start"]'
+  );
+
+  const endInput = document.querySelector(
+      'input.mx-input[placeholder="end"]'
+  );
+  const df = event.date_fields;
+  cityspark_setInputValue(dateInput, `${shortMonth(df.event_month)} ${df.event_day} ${df.event_year}`);
+  cityspark_setInputValue(startInput, `${df.event_hour_12}:${df.event_minute} ${df.event_ampm}`);
+
+  dateInput.style.border = "5px solid #F89D86";
+  dateInput.style.borderRadius = "5px";
+  startInput.style.border = "5px solid #F89D86";
+  startInput.style.borderRadius = "5px";
+}
+
+
 function runAutofill() {
-  // console.log(`Running autofill...`);
+  console.log(`Running autofill...`);
   const platform = detectPlatform();
-  const key = `LOCALBUZZ_AUTOFILL_${platform}`;
+  const key = `AIRHORN_AUTOFILL_${platform}`;
 
   chrome.storage.local.get(key, (data) => {
     const event = data[key]?.payload;
@@ -815,6 +989,10 @@ function runAutofill() {
       autofillSFStation(event);
     }else if(platform === "dothebay"){
       autofillDoTheBay(event);
+    }else if(platform === "eastbaymagazine"){
+      autofillCitySpark(event);
+    }else if(platform === "eastbaytimes"){
+      autofillCitySpark(event);
     }
   });
 }
