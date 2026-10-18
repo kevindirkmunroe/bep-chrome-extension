@@ -29,6 +29,8 @@ function detectPlatform(){
       return "eastbaytimes";
     }else if(window.location.pathname.includes("EastBayMagazine")){
       return "eastbaymagazine";
+    }else if(window.location.pathname.includes("MetroSiliconValley")) {
+      return "metrosiliconvalley";
     }
   }
 }
@@ -278,31 +280,6 @@ const base64ToFile = async (base64, filename, mimeType) => {
   const res = await fetch(base64);
   const blob = await res.blob();
   return new File([blob], filename, { type: mimeType });
-};
-
-let imageInjected = false;
-const injectImage = async (base64, filename, mimeType) => {
-  if (imageInjected) return; // 🚫 stop loop
-  imageInjected = true;
-
-  const inputs = document.querySelectorAll('input[type="file"]');
-
-  if (!inputs) {
-    console.error("No file input found");
-    return;
-  }
-  const fileInput = inputs[0];
-
-  const file = await base64ToFile(base64, filename, mimeType);
-
-  const dataTransfer = new DataTransfer();
-  dataTransfer.items.add(file);
-
-  fileInput.files = dataTransfer.files;
-  // 🔥 trigger ALL relevant events
-  fileInput.dispatchEvent(new Event("input", { bubbles: true }));
-  fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-  // console.log("✅ Image injected");
 };
 
 //
@@ -835,50 +812,6 @@ function autofillDoTheBay(event) {
   categoryContainer.style.borderRadius = "5px";
 }
 
-// function cityspark_setInputValue(el, value) {
-//   const setter = Object.getOwnPropertyDescriptor(
-//       HTMLInputElement.prototype,
-//       "value"
-//   )?.set;
-//
-//   if (!setter) {
-//     throw new Error("Native input setter not found");
-//   }
-//
-//   el.focus();
-//   setter.call(el, String(value));
-//
-//   el.dispatchEvent(new Event("input", {
-//     bubbles: true
-//   }));
-//
-//   el.dispatchEvent(new Event("change", {
-//     bubbles: true
-//   }));
-// }
-//
-// function cityspark_setInputByLabel(labelText, value) {
-//   const interval = setInterval(() => {
-//
-//     const group = [...document.querySelectorAll(".form-group")]
-//         .find(group => {
-//           const label = group.querySelector(":scope > label");
-//
-//           return label?.getAttribute("for") === labelText ||
-//               label?.textContent?.trim() === labelText;
-//         });
-//
-//     const el = group?.querySelector('input[type="text"]') ?? null;
-//     if (el) {
-//       clearInterval(interval);
-//       cityspark_setInputValue(el, value);
-//
-//       group.style.border = "5px solid #F89D86";
-//       group.style.borderRadius = "5px";
-//     }
-//   }, 1000);
-// }
-
 function cityspark_setInputValue(el, value) {
   el.focus();
 
@@ -1115,22 +1048,40 @@ function runAutofill() {
     const event = data[key]?.payload;
     if (!event) return;
 
-    if (platform === "funcheapsf") {
-      autofillFuncheap(event);
-    }else if(platform === "visitoakland"){
-      autofillVisitOakland(event);
-    }else if(platform === "indybay"){
-      autofillIndyBay(event);
-    }else if(platform === "sfstation"){
-      autofillSFStation(event);
-    }else if(platform === "dothebay"){
-      autofillDoTheBay(event);
-    }else if(platform === "eastbaymagazine"){
-      autofillCitySpark(event);
-    }else if(platform === "eastbaytimes"){
-      autofillCitySpark(event);
-    }else if(platform === "patch"){
-      autofillPatch(event);
+    switch (platform) {
+      case "funcheapsf":
+        autofillFuncheap(event);
+        break;
+
+      case "visitoakland":
+        autofillVisitOakland(event);
+        break;
+
+      case "indybay":
+        autofillIndyBay(event);
+        break;
+
+      case "sfstation":
+        autofillSFStation(event);
+        break;
+
+      case "dothebay":
+        autofillDoTheBay(event);
+        break;
+
+      case "eastbaymagazine":
+      case "eastbaytimes":
+      case "metrosiliconvalley":
+        autofillCitySpark(event);
+        break;
+
+      case "patch":
+        autofillPatch(event);
+        break;
+
+      default:
+        console.warn(`Unsupported platform: ${platform}`);
+        break;
     }
   });
 }
