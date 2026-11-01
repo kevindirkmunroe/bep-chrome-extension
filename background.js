@@ -1,5 +1,34 @@
 console.log("[background.js] Service worker initialized");
 
+async function openSubmissionWindows(platformUrl, referenceUrl) {
+    const platformWindow = await chrome.windows.create({
+        url: platformUrl,
+        type: "popup",
+        width: 1100,
+        height: 850,
+        left: 100,
+        top: 100,
+        focused: true
+    });
+
+    const referenceWindow = await chrome.windows.create({
+        url: referenceUrl,
+        type: "popup",
+        width: 460,
+        height: 760,
+        left: 1220,
+        top: 100,
+        focused: false
+    });
+
+    return {
+        platformWindowId: platformWindow.id,
+        referenceWindowId: referenceWindow.id,
+        platformTabId: platformWindow.tabs?.[0]?.id,
+        referenceTabId: referenceWindow.tabs?.[0]?.id
+    };
+}
+
 async function waitForTabComplete(tabId, timeoutMs = 15000) {
     const tab = await chrome.tabs.get(tabId);
 
@@ -92,6 +121,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             })();
 
             return true;
+        }
+
+        case "OPEN_SUBMISSION_WINDOWS": {
+                openSubmissionWindows(
+                    message.platformUrl,
+                    message.referenceUrl
+                )
+                    .then(sendResponse)
+                    .catch(error => {
+                        sendResponse({
+                            error: error.message
+                        });
+                    });
+
+                return true;
         }
 
         case "SET_EVENT": {

@@ -1180,3 +1180,38 @@ chrome.runtime.onMessage.addListener(
       }
     }
 );
+
+window.addEventListener("message", (event) => {
+  if (event.source !== window) return;
+  if (event.origin !== window.location.origin) return;
+
+  const message = event.data;
+
+  if (
+      message?.source !== "AIRHORN_UI" ||
+      message?.type !== "OPEN_SUBMISSION_WINDOWS"
+  ) {
+    return;
+  }
+
+  console.log("[Airhorn Content] Forwarding window request", message);
+
+  chrome.runtime.sendMessage(
+      {
+        type: "OPEN_SUBMISSION_WINDOWS",
+        platformUrl: message.platformUrl,
+        referenceUrl: message.referenceUrl
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+              "[Airhorn Content] Extension error:",
+              chrome.runtime.lastError.message
+          );
+          return;
+        }
+
+        console.log("[Airhorn Content] Background response:", response);
+      }
+  );
+});
