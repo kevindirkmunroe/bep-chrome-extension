@@ -909,6 +909,23 @@ function autofillCitySpark(event){
   cityspark_setInputByLabel('Description', event.description);
   cityspark_setInputByLabel('Pricing Notes', event.price);
 
+  let selector = 'input[name="IsTicketed"][value="2"]';
+  let radio = document.querySelector(selector);
+  console.log("Radio found:", radio);
+  console.log("Before click:", radio?.checked);
+  radio?.click();
+  console.log("Immediately after click:", radio?.checked);
+
+  if(event.price){
+    selector = 'input[name="Free Or Paid"][value="1"]';
+    radio = document.querySelector(selector);
+    console.log("2nd Radio found:", radio);
+    console.log("2nd Before click:", radio?.checked);
+    radio?.click();
+    console.log("2nd Immediately after click:", radio?.checked);
+  }
+
+  waitAndSet('input[name="Ticket Url"]', event.website);
   waitAndSet('input[name="address1"]', event.address_fields.street);
   waitAndSet('input[aria-controls="59-suggestions"]', event.address_fields.city);
   waitAndSet('input[name="StateCode"]', event.address_fields.state);
