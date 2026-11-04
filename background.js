@@ -1,5 +1,26 @@
 console.log("[background.js] Service worker initialized");
 
+async function closeSubmissionWindows(platformWindowId, referenceWindowId){
+    console.log(`[background.js] closeSubmissionWindows platformWindowId=${platformWindowId} referenceWindowId=${referenceWindowId}`);
+
+    if (!Number.isInteger(platformWindowId) || platformWindowId <= 0) {
+        console.log(`[background.js] ERROR platformWindowId=${platformWindowId}`);
+        return;
+    }
+
+    if (!Number.isInteger(referenceWindowId) || referenceWindowId <= 0) {
+        console.log(`[background.js] ERROR referenceWindowId=${platformWindowId}`);
+        return;
+    }
+
+    await chrome.windows.remove(platformWindowId, () => {
+        console.log(`[background.js] removed window ${platformWindowId}`);
+    });
+    await chrome.windows.remove(referenceWindowId, () => {
+        console.log(`[background.js] removed window ${referenceWindowId}`);
+    });
+}
+
 async function openSubmissionWindows(platformUrl, referenceUrl) {
     const platformWindow = await chrome.windows.create({
         url: platformUrl,
@@ -15,7 +36,19 @@ async function openSubmissionWindows(platformUrl, referenceUrl) {
         url: referenceUrl,
         type: "popup",
         width: 460,
-        height: 760,
+        height: 720,
+        left: 1220,
+        top: 260,
+        focused: false
+    });
+
+    let currUrl = new URL("http://localhost:4150");
+
+    await chrome.windows.create({
+        url: `${currUrl.host}/xr/close?platformWindowId=${platformWindow.id}&referenceWindowId=${referenceWindow.id}`,
+        type: "popup",
+        width: 460,
+        height: 150,
         left: 1220,
         top: 100,
         focused: false
@@ -136,6 +169,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     });
 
                 return true;
+        }
+
+        case "CLOSE_SUBMISSION_WINDOWS": {
+            closeSubmissionWindows(
+                message.platformWindowId,
+                message.referenceWindowId
+            )
+                .then(() => sendResponse({ success: true }))
+                .catch(error => {
+                    sendResponse({
+                        error: error.message
+                    });
+                });
+
+            return true;
         }
 
         case "SET_EVENT": {

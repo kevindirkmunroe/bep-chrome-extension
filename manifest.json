@@ -7,6 +7,9 @@
   "background": {
     "service_worker": "background.js"
   },
+  "externally_connectable": {
+    "matches": ["http://localhost:4150/*", "https://airhorn.events/*"]
+  },
   "content_scripts": [
     {
       "matches": [
