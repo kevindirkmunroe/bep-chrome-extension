@@ -26,9 +26,9 @@ async function openSubmissionWindows(platformUrl, referenceUrl) {
         url: platformUrl,
         type: "popup",
         width: 1100,
-        height: 850,
+        height: 820,
         left: 100,
-        top: 100,
+        top: 50,
         focused: true
     });
 
@@ -36,9 +36,9 @@ async function openSubmissionWindows(platformUrl, referenceUrl) {
         url: referenceUrl,
         type: "popup",
         width: 460,
-        height: 720,
+        height: 670,
         left: 1220,
-        top: 260,
+        top: 210,
         focused: false
     });
 
@@ -50,7 +50,7 @@ async function openSubmissionWindows(platformUrl, referenceUrl) {
         width: 460,
         height: 150,
         left: 1220,
-        top: 100,
+        top: 50,
         focused: false
     });
 
